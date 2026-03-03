@@ -1,0 +1,5 @@
+{
+  "name": "Gestion des colis",
+  "description": "A comprehensive parcel tracking and management system with authentication, dashboard analytics, and printing capabilities.",
+  "requestFramePermissions": []
+}
