@@ -74,6 +74,14 @@ export const ParcelForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation for mobile field: only digits and plus signs
+    const mobileRegex = /^[0-9+]+$/;
+    if (!mobileRegex.test(formData.mobile)) {
+      alert("Le numéro de téléphone ne doit contenir que des chiffres et le signe '+'.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -149,6 +157,8 @@ export const ParcelForm: React.FC = () => {
               <input
                 type="tel"
                 required
+                pattern="[0-9+]+"
+                title="Le numéro de téléphone ne doit contenir que des chiffres et le signe '+'."
                 value={formData.mobile}
                 onChange={e => setFormData(prev => ({ ...prev, mobile: e.target.value }))}
                 className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"

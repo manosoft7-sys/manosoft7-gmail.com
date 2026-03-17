@@ -594,6 +594,38 @@ export const ParcelList: React.FC = () => {
       </AnimatePresence>
 
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-neutral-100 flex flex-col sm:flex-row gap-4 bg-neutral-50/30">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+            <input 
+              type="text"
+              placeholder="Recherche rapide (Tracking, Expéditeur...)"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-sm"
+              value={advancedFilters.tracking}
+              onChange={e => setAdvancedFilters(prev => ({ ...prev, tracking: e.target.value }))}
+            />
+          </div>
+          <select 
+            className="px-4 py-2 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-sm min-w-[160px]"
+            value={advancedFilters.willaya}
+            onChange={e => setAdvancedFilters(prev => ({ ...prev, willaya: e.target.value }))}
+          >
+            <option value="">Toutes les Willayas</option>
+            {WILLAYAS.map(w => (
+              <option key={w} value={w}>{w}</option>
+            ))}
+          </select>
+          <select 
+            className="px-4 py-2 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-sm min-w-[160px]"
+            value={advancedFilters.status}
+            onChange={e => setAdvancedFilters(prev => ({ ...prev, status: e.target.value }))}
+          >
+            <option value="">Tous les États</option>
+            {PARCEL_STATUSES.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

@@ -7,6 +7,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import multer from "multer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,10 +79,13 @@ async function startServer() {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) return res.sendStatus(401);
+    if (!token) return res.status(401).json({ error: "Authentication token missing" });
 
     jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-      if (err) return res.sendStatus(403);
+      if (err) {
+        console.error("JWT Verification Error:", err.message);
+        return res.status(403).json({ error: "Invalid or expired token. Please log in again." });
+      }
       req.user = user;
       next();
     });
@@ -149,13 +155,52 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.get("/api/parcels", authenticateToken, (req, res) => {
+  app.get("/api/parcels", authenticateToken, async (req, res) => {
+    const sheetUrl = process.env.GOOGLE_SHEET_WEBAPP_URL;
+    
+    if (sheetUrl) {
+      try {
+        const response = await fetch(`${sheetUrl}?action=getParcels`);
+        if (response.ok) {
+          const data = await response.json();
+          return res.json(data);
+        } else {
+          console.error(`Google Sheets Fetch Error: ${response.status} ${response.statusText}`);
+          // Fallback to local DB
+        }
+      } catch (error: any) {
+        console.error("Google Sheets Fetch Exception:", error.message);
+      }
+    }
     const parcels = db.prepare("SELECT * FROM parcels ORDER BY created_at DESC").all();
     res.json(parcels);
   });
 
-  app.post("/api/parcels", authenticateToken, (req, res) => {
+  app.post("/api/parcels", authenticateToken, async (req, res) => {
     const { tracking, sender, mobile, willaya, location, amount, product, status, image } = req.body;
+    const sheetUrl = process.env.GOOGLE_SHEET_WEBAPP_URL;
+
+    if (sheetUrl) {
+      try {
+        const response = await fetch(sheetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'addParcel',
+            parcel: { tracking, sender, mobile, willaya, location, amount, product, status, image }
+          })
+        });
+        if (response.ok) {
+          const result = await response.json();
+          return res.json(result);
+        } else {
+          console.error(`Google Sheets Post Error: ${response.status} ${response.statusText}`);
+        }
+      } catch (error: any) {
+        console.error("Google Sheets Post Exception:", error.message);
+      }
+    }
+
     try {
       const result = db.prepare(`
         INSERT INTO parcels (tracking, sender, mobile, willaya, location, amount, product, status, image)
@@ -167,9 +212,32 @@ async function startServer() {
     }
   });
 
-  app.put("/api/parcels/:id", authenticateToken, (req, res) => {
+  app.put("/api/parcels/:id", authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { tracking, sender, mobile, willaya, location, amount, product, status, image } = req.body;
+    const sheetUrl = process.env.GOOGLE_SHEET_WEBAPP_URL;
+
+    if (sheetUrl) {
+      try {
+        const response = await fetch(sheetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'updateParcel',
+            id,
+            parcel: { tracking, sender, mobile, willaya, location, amount, product, status, image }
+          })
+        });
+        if (response.ok) {
+          return res.json({ success: true });
+        } else {
+          console.error(`Google Sheets Update Error: ${response.status} ${response.statusText}`);
+        }
+      } catch (error: any) {
+        console.error("Google Sheets Update Exception:", error.message);
+      }
+    }
+
     try {
       db.prepare(`
         UPDATE parcels 
@@ -182,8 +250,30 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/parcels/:id", authenticateToken, (req, res) => {
+  app.delete("/api/parcels/:id", authenticateToken, async (req, res) => {
     const { id } = req.params;
+    const sheetUrl = process.env.GOOGLE_SHEET_WEBAPP_URL;
+
+    if (sheetUrl) {
+      try {
+        const response = await fetch(sheetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'deleteParcel',
+            id
+          })
+        });
+        if (response.ok) {
+          return res.json({ success: true });
+        } else {
+          console.error(`Google Sheets Delete Error: ${response.status} ${response.statusText}`);
+        }
+      } catch (error: any) {
+        console.error("Google Sheets Delete Exception:", error.message);
+      }
+    }
+
     db.prepare("DELETE FROM parcels WHERE id = ?").run(id);
     res.json({ success: true });
   });
